@@ -381,6 +381,7 @@ class GlobalMenu(AbstractMenu[None]):
 		"""
 		if len(self._missing_configs()) != 0:
 			return False
+		return self._validate_bootloader() is None
 
 	def _select_applications(self, preset: ApplicationConfiguration | None) -> ApplicationConfiguration | None:
 		# If no preset, use default values
@@ -570,12 +571,62 @@ class GlobalMenu(AbstractMenu[None]):
 			return 'UKI: Disabled (Traditional BLS entries)'
 		return None
 
+	def _validate_bootloader(self) -> str | None:
+		"""
+		Checks the selected bootloader is valid for the selected filesystem
+		type of the boot partition.
+
+		Returns [`None`] if the bootloader is valid, otherwise returns a
+		string with the error message.
+
+		XXX: The caller is responsible for wrapping the string with the translation
+			shim if necessary.
+		"""
+		bootloader: Bootloader | None = None
+		root_partition: PartitionModification | None = None
+		boot_partition: PartitionModification | None = None
+		efi_partition: PartitionModification | None = None
+
+		bootloader = self._item_group.find_by_key('bootloader').value
+
+		if disk_config := self._item_group.find_by_key('disk_config').value:
+			for layout in disk_config.device_modifications:
+				if root_partition := layout.get_root_partition():
+					break
+			for layout in disk_config.device_modifications:
+				if boot_partition := layout.get_boot_partition():
+					break
+			if SysInfo.has_uefi():
+				for layout in disk_config.device_modifications:
+					if efi_partition := layout.get_efi_partition():
+						break
+		else:
+			return 'No disk layout selected'
+
+		if root_partition is None:
+			return 'Root partition not found'
+
+		if boot_partition is None:
+			return 'Boot partition not found'
+
+		if SysInfo.has_uefi():
+			if efi_partition is None:
+				return 'EFI system partition (ESP) not found'
+
+			if efi_partition.fs_type not in [FilesystemType.Fat12, FilesystemType.Fat16, FilesystemType.Fat32]:
+				return 'ESP must be formatted as a FAT filesystem'
+
+		return None
+
 	def _prev_install_invalid_config(self, item: MenuItem) -> str | None:
 		if missing := self._missing_configs():
 			text = ('Missing configurations:\n')
 			for m in missing:
 				text += f'- {m}\n'
 			return text[:-1]  # remove last new line
+
+		if error := self._validate_bootloader():
+			return (f'Invalid configuration: {error}')
 
 		return None
 
