@@ -241,37 +241,56 @@ def _esp_partition(sector_size: SectorSize) -> PartitionModification:
 		flags=flags,
 	)
 
-def _boot_partition(sector_size: SectorSize, using_gpt: bool, size: Size | None = None, separate_esp: bool = False, filesystem_type: FilesystemType | None = None) -> PartitionModification:
-	"""Create boot partition. If separate_esp=True, this is a regular boot partition using user's chosen FS, otherwise it's the ESP (FAT32)"""
-	if size is None:
-		size = Size(1, Unit.GiB, sector_size)
+def _boot_partition(
+    sector_size: SectorSize,
+    using_gpt: bool,
+    size: Size | None = None,
+    separate_esp: bool = False,
+    filesystem_type: FilesystemType | None = None,
+) -> PartitionModification | None:
+    """Create boot partition depending on bootloader and ESP setup"""
+    if size is None:
+        size = Size(1, Unit.GiB, sector_size)
 
-	flags = [PartitionFlag.BOOT]
-	start = Size(1, Unit.MiB, sector_size)
+    flags = [PartitionFlag.BOOT]
+    start = Size(1, Unit.MiB, sector_size)
+    bootloader = arch_config_handler.config.bootloader
 
-	# Determine filesystem type and flags based on separate_esp setting
-	if separate_esp:
-		# When using separate ESP, /boot uses the same filesystem as root (user's choice)
-		fs_type = filesystem_type if filesystem_type else FilesystemType.Ext4
-		# Add XBOOTLDR flag for systemd-boot when using separate ESP
-		if using_gpt:
-			if arch_config_handler.config.bootloader == Bootloader.Systemd:
-				flags.append(PartitionFlag.XBOOTLDR)
-	else:
-		# Standard mode: /boot is the ESP (FAT32)
-		fs_type = FilesystemType.Fat32
-		if using_gpt:
-			flags.append(PartitionFlag.ESP)
+    if separate_esp:
+        # GRUB: only ESP is used, no /boot partition
+        if bootloader == Bootloader.Grub:
+            return None
 
-	return PartitionModification(
-		status=ModificationStatus.Create,
-		type=PartitionType.Primary,
-		start=start,
-		length=size,
-		mountpoint=Path('/boot'),
-		fs_type=fs_type,
-		flags=flags,
-	)
+        # systemd-boot: needs /boot (XBOOTLDR)
+        if bootloader == Bootloader.Systemd:
+            fs_type = filesystem_type if filesystem_type else FilesystemType.Ext4
+            if using_gpt:
+                flags.append(PartitionFlag.XBOOTLDR)
+
+            return PartitionModification(
+                status=ModificationStatus.Create,
+                type=PartitionType.Primary,
+                start=start,
+                length=size,
+                mountpoint=Path('/boot'),
+                fs_type=fs_type,
+                flags=flags,
+            )
+
+    # Standard mode: /boot is the ESP (FAT32)
+    fs_type = FilesystemType.Fat32
+    if using_gpt:
+        flags.append(PartitionFlag.ESP)
+
+    return PartitionModification(
+        status=ModificationStatus.Create,
+        type=PartitionType.Primary,
+        start=start,
+        length=size,
+        mountpoint=Path('/boot'),
+        fs_type=fs_type,
+        flags=flags,
+    )
 
 def select_main_filesystem_format() -> FilesystemType:
 	items = [
@@ -357,6 +376,7 @@ def suggest_single_disk_layout(
 	if not filesystem_type:
 		filesystem_type = select_main_filesystem_format()
 
+	bootloader = arch_config_handler.config.bootloader
 	sector_size = device.device_info.sector_size
 	total_size = device.device_info.total_size
 	available_space = total_size
@@ -393,13 +413,23 @@ def suggest_single_disk_layout(
 	else:
 		next_start = Size(1, Unit.MiB, sector_size)
 
-	# Ask for boot partition size
-	boot_size = _select_boot_size(sector_size)
-	boot_partition = _boot_partition(sector_size, using_gpt, boot_size, separate_esp=use_separate_esp, filesystem_type=filesystem_type)
-	# Adjust boot partition start if ESP came first
-	if use_separate_esp:
-		boot_partition.start = next_start
-	device_modification.add_partition(boot_partition)
+	boot_size = None
+	if not use_separate_esp or bootloader == Bootloader.Systemd:
+		# Only ask for boot size if /boot will actually be created
+		boot_size = _select_boot_size(sector_size)
+
+	boot_partition = _boot_partition(
+		sector_size,
+		using_gpt,
+		boot_size,
+		separate_esp=use_separate_esp,
+		filesystem_type=filesystem_type,
+	)
+
+	if boot_partition:
+		if use_separate_esp:
+			boot_partition.start = next_start
+		device_modification.add_partition(boot_partition)
 
 	if separate_home is False or using_subvolumes or total_size < min_size_to_allow_home_part:
 		using_home_partition = False
@@ -420,8 +450,12 @@ def suggest_single_disk_layout(
 
 		using_home_partition = result.item() == MenuItem.yes()
 
-	# root partition starts right after boot partition
-	root_start = boot_partition.start + boot_partition.length
+	if boot_partition:
+		root_start = boot_partition.start + boot_partition.length
+	elif use_separate_esp:
+		root_start = esp_partition.start + esp_partition.length
+	else:
+		root_start = Size(1, Unit.MiB, sector_size)
 
 	# Set a size for / (/root)
 	if using_home_partition:
