@@ -606,8 +606,10 @@ class GlobalMenu(AbstractMenu[None]):
 		if root_partition is None:
 			return 'Root partition not found'
 
+		# In GRUB + separate ESP mode, /boot is intentionally omitted
 		if boot_partition is None:
-			return 'Boot partition not found'
+			if not (bootloader == Bootloader.Grub and SysInfo.has_uefi()):
+				return 'Boot partition not found'
 
 		if SysInfo.has_uefi():
 			if efi_partition is None:
