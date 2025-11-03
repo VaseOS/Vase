@@ -1325,6 +1325,10 @@ class Installer:
 		boot_partition = self._get_boot_partition()
 		root = self._get_root()
 
+		# If GRUB + UEFI and no /boot partition exists, use the ESP as the boot partition
+		if boot_partition is None and bootloader == Bootloader.Grub and efi_partition is not None and SysInfo.has_uefi():
+			boot_partition = efi_partition
+
 		if boot_partition is None:
 			raise ValueError(f'Could not detect boot at mountpoint {self.target}')
 
