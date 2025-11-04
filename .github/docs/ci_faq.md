@@ -27,3 +27,7 @@ You can also fix this manually in terminal before install if you desire `$ timed
 `$ timedatectl set-timezone Asia/Honk_Kong`
 
 Sometimes if the CMOS battery of a BIOS is dead, the issue is that your preferred settings can get reset. And cause issues for example older BIOS can reset to `Octane RST` for SATA Mode.
+
+- Error with `chmod /root` 
+
+This can mean the disk is unreachable by archinstall, you can try resetting this disk to a linux compatible format (and/or unlocked) before isntallation.

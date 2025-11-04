@@ -67,9 +67,9 @@ You can also use `lspci | grep "Something"`
 
 > For these above use Nouveau then install from AUR appropriately. [WikiNVIDIA](https://wiki.archlinux.org/title/NVIDIA)
 
-### Hybrid Graphics (Intel + Nvidia)
+### Hybrid Graphics (Intel/AMD iGPU + Nvidia dGPU)
 
-When both Intel and Nvidia GPUs are detected, `nvidia-prime` is automatically included with any Nvidia driver selection. This enables GPU switching for laptops with Optimus.
+Based on our modified `hardware.py` logic: `nvidia-prime` is automatically included when hybrid graphics are detected. This enables GPU switching for laptops with Optimus.
 
 **Usage:**
 ```bash
@@ -83,7 +83,7 @@ prime-run prismlauncher   # Minecraft
 prime-run kdenlive        # Video editor
 ```
 
-This runs the application on the Nvidia dGPU instead of the Intel iGPU, useful for power management and performance. 
+This runs the application on the Nvidia dGPU instead of the iGPU, useful for power management and performance. 
 
 ## Kernels
 
