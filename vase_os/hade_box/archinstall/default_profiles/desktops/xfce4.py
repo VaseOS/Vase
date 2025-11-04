@@ -2,7 +2,6 @@ from typing import override
 
 from archinstall.default_profiles.profile import GreeterType, Profile, ProfileType
 
-
 class Xfce4Profile(Profile):
 	def __init__(self) -> None:
 		super().__init__(
