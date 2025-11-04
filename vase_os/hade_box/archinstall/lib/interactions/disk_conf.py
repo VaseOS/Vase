@@ -201,7 +201,7 @@ def _select_separate_esp(using_gpt: bool) -> bool:
 
 	prompt = ('Would you like to use a separate ESP partition?\n')
 	prompt += ('Merged: /boot is the ESP (simpler, default)\n')
-	prompt += ('Separate: /efi for ESP, /boot for kernels\n')
+	prompt += ('Separate: /efi spserate only for grub\n XBOOTLDR for systemd-boot /boot part\n')
 
 	items = [
 		MenuItem('Standard (recommended)', value=False),
