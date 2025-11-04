@@ -179,7 +179,9 @@ def perform_installation(mountpoint: Path) -> None:
 
 		mandatory_package = ['git']
 		installation.add_additional_packages(mandatory_package)
-
+		mandatory_package2 = ['gamescope']
+		installation.add_additional_packages(mandatory_package2)
+		
 		if timezone := config.timezone:
 			installation.set_timezone(timezone)
 

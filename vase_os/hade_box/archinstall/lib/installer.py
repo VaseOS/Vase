@@ -1074,46 +1074,47 @@ class Installer:
 
 		# Debug graphics driver state before GRUB configuration
 		#debug(f'GRUB configuration - Graphics driver state: {self._gfx_driver}')
-		#if self._gfx_driver:
-			#debug(f'Graphics driver: {self._gfx_driver.value}, is_nvidia: {self._gfx_driver.is_nvidia()}')
+		if self._gfx_driver:
+			debug(f'Graphics driver: {self._gfx_driver.value}, is_nvidia: {self._gfx_driver.is_nvidia()}')
 
 		#### CHANGE ME Add hardware-specific parameters to GRUB_CMDLINE_LINUX_DEFAULT
-		#if self._gfx_driver and self._gfx_driver.is_nvidia():
-			#debug('Adding NVIDIA parameters to GRUB_CMDLINE_LINUX_DEFAULT')
+		if self._gfx_driver and self._gfx_driver.is_nvidia():
+			debug('Adding NVIDIA parameters to GRUB_CMDLINE_LINUX_DEFAULT')
 
 			# Build the hardware-specific parameters string
-			#hw_params = []
+			hw_params = []
 
 			# These are now included iin nvidia-utils but could help compat by setting explicitly. 
-			#if self._gfx_driver == GfxDriver.NvidiaProprietary:
-				#hw_params.append('nvidia-drm.modeset=1')
+			if self._gfx_driver == GfxDriver.NvidiaProprietary:
+				hw_params.append('nvidia-drm.modeset=1')
+				
 				#hw_params.append('nvidia-drm.fbdev=1')
 				#hw_params.append('nvidia.NVreg_PreserveVideoMemoryAllocations=1')
 				# i915.modeset=1
 				
 			# Find and update GRUB_CMDLINE_LINUX_DEFAULT
-			#if 'GRUB_CMDLINE_LINUX_DEFAULT=' in config:
+			if 'GRUB_CMDLINE_LINUX_DEFAULT=' in config:
 				# Extract existing parameters and append new ones
-				#def append_params(match):
-					#existing_params = match.group(2).strip()
-					#if existing_params:
+				def append_params(match):
+					existing_params = match.group(2).strip()
+					if existing_params:
 						# Add space before new params if existing params don't end with space
-						#separator = ' ' if not existing_params.endswith(' ') else ''
-						#return f'{match.group(1)}{existing_params}{separator}{" ".join(hw_params)}{match.group(3)}'
-					#else:
+						separator = ' ' if not existing_params.endswith(' ') else ''
+						return f'{match.group(1)}{existing_params}{separator}{" ".join(hw_params)}{match.group(3)}'
+					else:
 						# No existing params, just add new ones
-						#return f'{match.group(1)}{" ".join(hw_params)}{match.group(3)}'
+						return f'{match.group(1)}{" ".join(hw_params)}{match.group(3)}'
 				
-				#config = re.sub(
-					#r'(GRUB_CMDLINE_LINUX_DEFAULT=")(.*?)(")',
-					#append_params,
-					#config,
-					#count=1
-				#)
-				#info(f'Added NVIDIA parameters to GRUB_CMDLINE_LINUX_DEFAULT: {" ".join(hw_params)}')
-			#else:
+				config = re.sub(
+					r'(GRUB_CMDLINE_LINUX_DEFAULT=")(.*?)(")',
+					append_params,
+					config,
+					count=1
+				)
+				info(f'Added NVIDIA parameters to GRUB_CMDLINE_LINUX_DEFAULT: {" ".join(hw_params)}')
+			else:
 				# If GRUB_CMDLINE_LINUX_DEFAULT doesn't exist, create it
-				#config += f'\n# Hardware-specific parameters\nGRUB_CMDLINE_LINUX_DEFAULT="{" ".join(hw_params)}"\n'
+				config += f'\n# Hardware-specific parameters\nGRUB_CMDLINE_LINUX_DEFAULT="{" ".join(hw_params)}"\n'
 
 		# Apply GRUB configuration
 		if grub_config:
