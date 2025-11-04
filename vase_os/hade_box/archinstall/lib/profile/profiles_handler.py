@@ -308,7 +308,7 @@ class ProfileHandler:
 		from ...default_profiles.desktops.sway import SwayProfile
 		from ...default_profiles.desktops.hyprland import HyprlandProfile
 		from ...default_profiles.desktops.niri import NiriProfile
-		from ...default_profiles.desktops.niri import RiverProfile
+		from ...default_profiles.desktops.river import RiverProfile
 		from ...default_profiles.desktops.minimal import MinimalProfile
 
 		profiles = [
