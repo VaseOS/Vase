@@ -25,9 +25,8 @@ class RiverProfile(Profile):
             'waybar',
             'noto-fonts',
 			'noto-fonts-emoji',
-			'ttf-liberation',
 			'otf-font-awesome',
-			'ttf-jetbrains-mono',
+            'pavucontrol',
 			'xdg-desktop-portal-wlr',
 			'river',
 		]

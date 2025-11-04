@@ -44,9 +44,7 @@ class HyprlandProfile(Profile):
 			'xorg-xwayland',
 			'noto-fonts',
 			'noto-fonts-emoji',
-			'ttf-liberation',
 			'otf-font-awesome',
-			'ttf-jetbrains-mono',
 			'xdg-utils',
 		] + additional
 
