@@ -4,6 +4,12 @@
 
 The easiet way if you are intrested in digging a bit deeper (and you should): 
 
+UEFI or BIOS
+
+`$ cat /sys/firmware/efi/fw_platform_size`
+
+It will return 64 for a 64-bit (x64) UEFI or 32 for a 32-bit (IA32) UEFI. If the file does not exist, you have not booted in UEFI mode. 
+
 `sudo dmidecode -t <type>` 
 
   | Filter    | Shows                                    |
@@ -26,7 +32,7 @@ Manufacturer: Micro-Star International Co., Ltd.
 Product Name: GP72 6QE
 `
 
-You can also use `lspci | grep "Something"`
+You can also use `lspci | grep "Something"` like `3d` or `network`
 
 ## Basics
 
@@ -125,10 +131,12 @@ sudo pacman -S lib32-nvidia-utils steam
 - Steam Deck ships with all AMD related 32-bit libraries pre-installed vs Vanilla Arch only installs 64-bit drivers by default.
 - Games launch but immediately crash when 32-bit OpenGL/Vulkan libraries are missing...
 
-**Verify installation 32bit libs:**
+**Verify installation 32bit libs:** From local installed.
 ```bash
 pacman -Q | grep lib32
 ```
+
+You can do the same with `pacman -Ss | grep nvidia` for example to see available.
 
 You should see `lib32-nvidia-utils`, `lib32-vulkan-icd-loader`, and `lib32-mesa` in the list + many more others pulled by steam.
 
